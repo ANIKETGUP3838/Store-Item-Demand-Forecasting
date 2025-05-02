@@ -7,10 +7,15 @@ A powerful and interactive web application for forecasting store item demand usi
 📑 Table of Contents
 
 Project Overview
+
 Features
+
 Usage
+
 Dataset
+
 Methodology
+
 Technologies Used
 
 📊 Project Overview
@@ -24,53 +29,85 @@ The app forecasts demand for each store-item combination over a 90-day horizon, 
 ✅ Key Objectives
 
 Preprocess and filter data by store and item
+
 Perform time series decomposition to reveal trends and seasonality
+
 Evaluate stationarity using Dickey-Fuller test
+
 Apply multiple forecasting models and compare their performance
+
 Visualize forecasts alongside confidence intervals
 
 ✨ Features
 
 Interactive UI with Streamlit
+
 Data Filtering by store and item
+
 Time Series Analysis:
+
 Seasonal decomposition
+
 Rolling statistics and stationarity test (ADF)
+
 Multiple Forecasting Models:
+
 ARIMA
+
 SARIMA (for seasonal patterns)
+
 Exponential Smoothing
+
 ARCH/GARCH (for modeling volatility)
+
 LSTM (neural network-based deep learning model)
+
 Visualizations:
+
 Plotly-based interactive charts
+
 Forecasts with confidence intervals
+
 Scalability: Handles large datasets efficiently
 
 🚀 Usage
+
 Upload Dataset
+
 Upload a .csv file (train.csv) via the sidebar.
+
 Required columns: date, store, item, sales.
 
 Filter Data
+
 Choose the desired store and item from dropdown menus.
 
 Explore Visuals
+
 View:
 
 Sales trends
+
 Seasonal decomposition
+
 Rolling statistics
+
 Dickey-Fuller test results
+
 Run Forecasts
+
 Click to generate and visualize forecasts using different models.
 
 Interpret Results
+
 Compare forecast vs. actual data
+
 Use decomposition plots to understand underlying patterns
+
 Analyze confidence intervals (especially for SARIMA)
 
 📦 Dataset
+
 Expected CSV structure:
 
 date	store	item	sales
