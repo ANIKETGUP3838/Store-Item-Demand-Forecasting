@@ -106,7 +106,9 @@ LSTM: Look-back window of 30 days
 Forecasts for a 90-day test window
 Plot actual vs predicted
 Show confidence intervals (e.g. SARIMA)
+
 🛠 Technologies Used
+
 Python
 Streamlit – UI framework
 Pandas, NumPy – Data manipulation
