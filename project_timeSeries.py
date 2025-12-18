@@ -15,7 +15,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 warnings.filterwarnings("ignore")
 
 st.set_page_config(layout="wide")
@@ -130,10 +130,35 @@ with tab2:
     train = filtered_df['sales'][:-90]
     test = filtered_df['sales'][-90:]
 
+    def classification_metrics_from_forecast(y_true_reg, y_pred_reg, threshold):
+        y_true = (y_true_reg >= threshold).astype(int)
+        y_pred = (y_pred_reg >= threshold).astype(int)
+    
+        accuracy  = accuracy_score(y_true, y_pred)
+        precision = precision_score(y_true, y_pred, zero_division=0)
+        recall    = recall_score(y_true, y_pred, zero_division=0)
+        f1        = f1_score(y_true, y_pred, zero_division=0)
+        cm        = confusion_matrix(y_true, y_pred)
+    
+        return accuracy, precision, recall, f1, cm
+
     if st.button("Run ARIMA Forecast"):
         arima_model = ARIMA(train, order=(5, 1, 0)).fit()
         forecast = arima_model.forecast(steps=90)
+
+        threshold = train.mean()
+
+        acc, prec, rec, f1, cm = classification_metrics_from_forecast(
+            test.values, forecast.values, threshold
+        )
     
+        st.subheader("Classification Metrics (High / Low Demand)")
+        st.write(f"Accuracy  : {acc:.4f}")
+        st.write(f"Precision : {prec:.4f}")
+        st.write(f"Recall    : {rec:.4f}")
+        st.write(f"F1-score  : {f1:.4f}")
+        st.write("Confusion Matrix")
+        st.write(cm)
         # Metrics
         rmse = np.sqrt(mean_squared_error(test, forecast))
         r2 = r2_score(test, forecast)
@@ -189,7 +214,20 @@ with tab2:
     
         forecast = results.get_forecast(steps=90)
         forecast_values = forecast.predicted_mean
+
+        threshold = train.mean()
+
+        acc, prec, rec, f1, cm = classification_metrics_from_forecast(
+            test.values, forecast.values, threshold
+        )
     
+        st.subheader("Classification Metrics (High / Low Demand)")
+        st.write(f"Accuracy  : {acc:.4f}")
+        st.write(f"Precision : {prec:.4f}")
+        st.write(f"Recall    : {rec:.4f}")
+        st.write(f"F1-score  : {f1:.4f}")
+        st.write("Confusion Matrix")
+        st.write(cm)
         rmse = np.sqrt(mean_squared_error(test, forecast_values))
         r2 = r2_score(test, forecast_values)
     
@@ -231,7 +269,22 @@ with tab2:
         predictions = model.predict(X_test_lstm)
         predictions_rescaled = scaler.inverse_transform(predictions)
         y_test_rescaled = scaler.inverse_transform(y_test_lstm.reshape(-1, 1))
+
+        threshold = train.mean()
+
+        acc, prec, rec, f1, cm = classification_metrics_from_forecast(
+            y_test_rescaled.flatten(),
+            predictions_rescaled.flatten(),
+            threshold
+        )
     
+        st.subheader("Classification Metrics (High / Low Demand)")
+        st.write(f"Accuracy  : {acc:.4f}")
+        st.write(f"Precision : {prec:.4f}")
+        st.write(f"Recall    : {rec:.4f}")
+        st.write(f"F1-score  : {f1:.4f}")
+        st.write("Confusion Matrix")
+        st.write(cm)
         rmse = np.sqrt(mean_squared_error(y_test_rescaled, predictions_rescaled))
         r2 = r2_score(y_test_rescaled, predictions_rescaled)
     
