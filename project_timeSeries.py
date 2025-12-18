@@ -11,7 +11,7 @@ from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
 import warnings
-
+from sklearn.metrics import mean_squared_error, r2_score
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -133,6 +133,15 @@ with tab2:
     if st.button("Run ARIMA Forecast"):
         arima_model = ARIMA(train, order=(5, 1, 0)).fit()
         forecast = arima_model.forecast(steps=90)
+    
+        # Metrics
+        rmse = np.sqrt(mean_squared_error(test, forecast))
+        r2 = r2_score(test, forecast)
+    
+        st.success("ARIMA Evaluation Metrics")
+        st.write(f"RMSE: {rmse:.2f}")
+        st.write(f"R-squared: {r2:.4f}")
+    
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=train.index, y=train, name="Train"))
         fig.add_trace(go.Scatter(x=test.index, y=test, name="Test"))
@@ -141,14 +150,26 @@ with tab2:
         st.plotly_chart(fig, use_container_width=True)
 
     if st.button("Run Exponential Smoothing Forecast"):
-        exp_model = ExponentialSmoothing(train, trend='add', seasonal='add', seasonal_periods=365).fit()
+        exp_model = ExponentialSmoothing(
+            train, trend='add', seasonal='add', seasonal_periods=365
+        ).fit()
+    
         forecast = exp_model.forecast(90)
+    
+        rmse = np.sqrt(mean_squared_error(test, forecast))
+        r2 = r2_score(test, forecast)
+    
+        st.success("Exponential Smoothing Metrics")
+        st.write(f"RMSE: {rmse:.2f}")
+        st.write(f"R-squared: {r2:.4f}")
+    
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=train.index, y=train, name="Train"))
         fig.add_trace(go.Scatter(x=test.index, y=test, name="Test"))
-        fig.add_trace(go.Scatter(x=test.index, y=forecast, name="Exponential Smoothing Forecast"))
+        fig.add_trace(go.Scatter(x=test.index, y=forecast, name="Forecast"))
         fig.update_layout(title="Exponential Smoothing Forecast")
         st.plotly_chart(fig, use_container_width=True)
+    
 
     if st.button("Run ARCH/GARCH Forecast"):
         returns = 100 * filtered_df['sales'].pct_change().dropna()
@@ -165,17 +186,23 @@ with tab2:
     if st.button("Run SARIMA Forecast"):
         model = SARIMAX(train, order=(1, 1, 1), seasonal_order=(1, 1, 1, 7))
         results = model.fit()
+    
         forecast = results.get_forecast(steps=90)
-        forecast_df = forecast.predicted_mean
-        conf_int = forecast.conf_int()
-        fig3 = go.Figure()
-        fig3.add_trace(go.Scatter(x=train.index, y=train, name="Train"))
-        fig3.add_trace(go.Scatter(x=test.index, y=test, name="Test"))
-        fig3.add_trace(go.Scatter(x=forecast_df.index, y=forecast_df, name="Forecast", line=dict(color='green')))
-        fig3.add_trace(go.Scatter(x=conf_int.index, y=conf_int.iloc[:, 0], fill=None, mode='lines', line_color='lightgrey', name='Lower CI'))
-        fig3.add_trace(go.Scatter(x=conf_int.index, y=conf_int.iloc[:, 1], fill='tonexty', mode='lines', line_color='lightgrey', name='Upper CI'))
-        fig3.update_layout(title="SARIMA Forecast", height=500)
-        st.plotly_chart(fig3, use_container_width=True)
+        forecast_values = forecast.predicted_mean
+    
+        rmse = np.sqrt(mean_squared_error(test, forecast_values))
+        r2 = r2_score(test, forecast_values)
+    
+        st.success("SARIMA Evaluation Metrics")
+        st.write(f"RMSE: {rmse:.2f}")
+        st.write(f"R-squared: {r2:.4f}")
+    
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=train.index, y=train, name="Train"))
+        fig.add_trace(go.Scatter(x=test.index, y=test, name="Test"))
+        fig.add_trace(go.Scatter(x=forecast_values.index, y=forecast_values, name="Forecast"))
+        fig.update_layout(title="SARIMA Forecast")
+        st.plotly_chart(fig, use_container_width=True)
 
     st.subheader("Forecasting with LSTM")
     def create_lstm_dataset(series, look_back=30):
@@ -196,15 +223,32 @@ with tab2:
 
     if st.button("Run LSTM Forecast"):
         model = Sequential()
-        model.add(LSTM(50, return_sequences=False, input_shape=(30, 1)))
+        model.add(LSTM(50, input_shape=(30, 1)))
         model.add(Dense(1))
-        model.compile(loss='mean_squared_error', optimizer='adam')
+        model.compile(loss='mse', optimizer='adam')
         model.fit(X_train_lstm, y_train_lstm, epochs=10, batch_size=16, verbose=0)
+    
         predictions = model.predict(X_test_lstm)
         predictions_rescaled = scaler.inverse_transform(predictions)
-        forecast_dates = filtered_df.index[-90:]
-        fig4 = go.Figure()
-        fig4.add_trace(go.Scatter(x=filtered_df.index[-180:], y=filtered_df['sales'].values[-180:], name="Actual"))
-        fig4.add_trace(go.Scatter(x=forecast_dates, y=predictions_rescaled.flatten(), name="LSTM Forecast", line=dict(color='orange')))
-        fig4.update_layout(title="LSTM Forecast vs Actual", height=500)
-        st.plotly_chart(fig4, use_container_width=True)
+        y_test_rescaled = scaler.inverse_transform(y_test_lstm.reshape(-1, 1))
+    
+        rmse = np.sqrt(mean_squared_error(y_test_rescaled, predictions_rescaled))
+        r2 = r2_score(y_test_rescaled, predictions_rescaled)
+    
+        st.success("LSTM Evaluation Metrics")
+        st.write(f"RMSE: {rmse:.2f}")
+        st.write(f"R-squared: {r2:.4f}")
+    
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=filtered_df.index[-90:], 
+            y=y_test_rescaled.flatten(),
+            name="Actual"
+        ))
+        fig.add_trace(go.Scatter(
+            x=filtered_df.index[-90:], 
+            y=predictions_rescaled.flatten(),
+            name="LSTM Forecast"
+        ))
+        fig.update_layout(title="LSTM Forecast vs Actual")
+        st.plotly_chart(fig, use_container_width=True)
