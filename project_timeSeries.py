@@ -218,7 +218,7 @@ with tab2:
         threshold = train.mean()
 
         acc, prec, rec, f1, cm = classification_metrics_from_forecast(
-            test.values, forecast.values, threshold
+            test.values, forecast_values.values, threshold
         )
     
         st.subheader("Classification Metrics (High / Low Demand)")
